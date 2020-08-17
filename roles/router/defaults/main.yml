@@ -1,0 +1,10 @@
+ddns:
+  cloudflare_api_key: XXXXXXXXXXXXXXX
+  zone: example.com
+  subdomain: test
+
+haproxy:
+  tls_dir: /etc/letsencrypt/live/example.com
+
+certbot:
+  renew_command: "certbot renew"

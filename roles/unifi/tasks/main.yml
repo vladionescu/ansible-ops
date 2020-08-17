@@ -1,0 +1,60 @@
+---
+
+- name: Create unifi user
+  user:
+    name: unifi
+    create_home: false
+    state: present
+  register: unifi_user
+
+- name: Unifi controller container
+  docker_container:
+    name: unifi-controller
+    image: jacobalberty/unifi
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/unifi-controller/data:/unifi/data
+      - /data/docker/unifi-controller/log:/unifi/log
+      - /data/docker/unifi-controller/run:/var/run/unifi
+      - /data/docker/unifi-controller/cert:/unifi/cert
+    env:
+      UNIFI_UID: "{{ unifi_user.uid }}"
+      UNIFI_GID: "{{ unifi_user.group }}"
+      TZ: America/Los_Angeles
+    ports:
+      - "{{ unifi_controller.port.http }}:8080"
+      - "{{ unifi_controller.port.https }}:8443"
+      - "{{ unifi_controller.port.http_guest_portal }}:8880"
+      - "{{ unifi_controller.port.https_guest_portal }}:8843"
+      - '6789:6789'
+      - '3478:3478/udp'
+      - '10001:10001/udp'
+
+- name: Unifi video container
+  docker_container:
+    name: unifi-video
+    image: pducharme/unifi-video-controller
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/unifi-video/data:/var/lib/unifi-video
+      - /data/docker/unifi-video/videos:/usr/lib/unifi-video/data/videos
+      - /data/docker/unifi-video/logs:/var/log/unifi-video
+    tmpfs:
+      - /var/cache/unifi-video
+    env:
+      PUID: "{{ unifi_user.uid }}"
+      PGID: "{{ unifi_user.group }}"
+      TZ: America/Los_Angeles
+      CREATE_TMPFS: "no"
+    ports:
+      - "{{ unifi_video.port.http }}:7080"
+      - "{{ unifi_video.port.https }}:7443"
+      - "{{ unifi_video.port.http_video }}:7445"
+      - "{{ unifi_video.port.https_video }}:7446"
+      - "{{ unifi_video.port.rtsp }}:7447"
+      - "{{ unifi_video.port.inbound_camera_stream }}:6666"
+      - "{{ unifi_video.port.camera_mgmt }}:7442"
+    capabilities:
+      - DAC_READ_SEARCH

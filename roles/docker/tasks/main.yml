@@ -1,0 +1,35 @@
+---
+
+- name: Install Docker repo prereqs
+  package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg2
+      - software-properties-common
+    state: latest
+
+- name: Add Docker repo GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add Docker repo
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/debian buster stable
+    filename: docker
+    state: present
+
+- name: Install Docker engine
+  package:
+    name:
+      - docker-ce
+      - docker-ce-cli
+    state: latest
+
+- name: Install Docker Python libs
+  pip:
+    name:
+      - docker
+      - docker-compose

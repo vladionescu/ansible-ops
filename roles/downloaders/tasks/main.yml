@@ -1,0 +1,81 @@
+---
+
+- name: Create downloads group
+  group:
+    name: downloads
+    state: present
+
+- name: Create sabnzb user
+  user:
+    name: sabnzb
+    group: downloads
+    create_home: false
+    state: present
+  register: sabnzb_user
+
+- name: Create sonarr user
+  user:
+    name: sonarr
+    group: downloads
+    create_home: false
+    state: present
+  register: sonarr_user
+
+- name: Create radarr user
+  user:
+    name: radarr
+    group: downloads
+    create_home: false
+    state: present
+  register: radarr_user
+
+- name: Sabnzbd container
+  docker_container:
+    name: sabnzbd
+    image: linuxserver/sabnzbd
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/sabnzbd/config:/config
+      - /data/downloads:/data/downloads
+    env:
+      PUID: "{{ sabnzb_user.uid }}"
+      PGID: "{{ sabnzb_user.group }}"
+      TZ: America/Los_Angeles
+    ports:
+      - "{{ sabnzbd.port }}:8080"
+
+- name: Sonarr container
+  docker_container:
+    name: sonarr
+    image: linuxserver/sonarr
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/sonarr/config:/config
+      - /data/downloads:/data/downloads
+      - /data/plex/shows:/data/plex/shows
+    env:
+      PUID: "{{ sonarr_user.uid }}"
+      PGID: "{{ sonarr_user.group }}"
+      TZ: America/Los_Angeles
+    ports:
+      - "{{ sonarr.port }}:8989"
+
+- name: Radarr container
+  docker_container:
+    name: radarr
+    image: linuxserver/radarr
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/radarr/config:/config
+      - /data/downloads:/data/downloads
+      - /data/plex/movies:/data/plex/movies
+    env:
+      PUID: "{{ radarr_user.uid }}"
+      PGID: "{{ radarr_user.group }}"
+      TZ: America/Los_Angeles
+    ports:
+      - "{{ radarr.port }}:7878"
+

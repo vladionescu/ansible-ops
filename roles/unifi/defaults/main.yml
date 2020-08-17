@@ -1,0 +1,16 @@
+unifi_controller:
+  port:
+    http: 8080
+    https: 8443
+    http_guest_portal: 8880
+    https_guest_portal: 8843
+
+unifi_video:
+  port:
+    http: 7080
+    https: 7443
+    http_video: 7445
+    https_video: 7446
+    rtsp: 7447
+    inbound_camera_stream: 6666
+    camera_mgmt: 7442

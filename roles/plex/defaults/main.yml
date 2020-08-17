@@ -1,0 +1,4 @@
+plex:
+  port: 32400
+  advertise_ip: "http://{{ ansible_facts.enp0s25.ipv4.address }}:32400/"
+  claim_code: claim-aaaaaaaaaaaaaaaaaaaa

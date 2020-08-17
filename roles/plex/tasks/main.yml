@@ -1,0 +1,33 @@
+---
+
+- name: Create downloads group
+  group:
+    name: downloads
+    state: present
+
+- name: Create plex user
+  user:
+    name: plex
+    group: downloads
+    create_home: false
+    state: present
+  register: plex_user
+
+- name: Plex container
+  docker_container:
+    name: plex
+    image: plexinc/pms-docker
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/plex/config:/config
+      - /data/downloads:/data/downloads
+      - /data/plex:/data/plex
+    env:
+      PLEX_UID: "{{ plex_user.uid }}"
+      PLEX_GID: "{{ plex_user.group }}"
+      TZ: America/Los_Angeles
+      ADVERTISE_IP: "{{ plex.advertise_ip }}"
+      PLEX_CLAIM: "{{ plex.claim_code }}"
+    ports:
+      - "{{ plex.port }}:32400"

@@ -1,0 +1,37 @@
+---
+
+- name: Haproxy container
+  docker_container:
+    name: haproxy
+    image: 'haproxy:alpine'
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/haproxy/config:/usr/local/etc/haproxy
+      - "{{ haproxy.tls_dir }}:/usr/local/etc/tls"
+    network_mode: host
+
+- name: DDNS container
+  docker_container:
+    name: ddns
+    image: oznu/cloudflare-ddns
+    pull: yes
+    state: started
+    env:
+      API_KEY: "{{ ddns.cloudflare_api_key }}"
+      ZONE: "{{ ddns.zone }}"
+      SUBDOMAIN: "{{ ddns.subdomain }}"
+
+- name: Install LetsEncrypt certbot
+  package:
+    name:
+      - certbot
+      - python3-certbot-dns-cloudflare
+
+- name: Renew certs every Sunday
+  cron: 
+    name: "Renew certs every Sunday"
+    minute: "0"
+    hour: "0"
+    weekday: "7"
+    job: "{{ certbot.renew_command }}"

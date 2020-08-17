@@ -1,0 +1,48 @@
+---
+
+- name: Set up main server
+  gather_facts: yes
+  become: true
+  hosts: all
+  vars_files:
+    - vars/vault.yml
+  vars:
+    iscsi:
+      server: "{{ vault.iscsi.server }}"
+      mount_device: "/dev/disk/by-label/iscsi-data"
+    sabnzbd:
+      port: 8000
+    certbot:
+      renew_command: "certbot renew --deploy-hook 'cat $RENEWED_LINEAGE/fullchain.pem $RENEWED_LINEAGE/privkey.pem > $RENEWED_LINEAGE/everything.pem' --deploy-hook 'docker kill -s HUP haproxy'"
+    plex:
+      claim_code: "{{ vault.plex.claim_code }}"
+    ddns:
+      cloudflare_api_key: "{{ vault.ddns.cloudflare_api_key }}"
+      zone: "{{ vault.ddns.zone }}"
+      subdomain: "{{ vault.ddns.subdomain }}"
+    haproxy:
+      tls_dir: "{{ vault.haproxy.tls_dir }}"
+  roles:
+    - docker
+    - router
+    - unifi
+    - downloaders
+    - plex
+  pre_tasks:
+  - name: Connect to the only available iSCSI target on the NAS
+    open_iscsi:
+      portal: '{{ iscsi.server }}'
+      discover: yes
+      show_nodes: yes
+      login: yes
+      automatic: yes
+    notify:
+      - Mount data
+  handlers:
+  - name: Mount data
+    mount:
+      path: /data
+      src: '{{ iscsi.mount_device }}'
+      fstype: xfs
+      state: mounted
+      opts: 'inode64,_netdev'

@@ -1,0 +1,8 @@
+sabnzbd:
+  port: 8080
+
+sonarr:
+  port: 8989
+
+radarr:
+  port: 7878
