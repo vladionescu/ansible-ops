@@ -7,6 +7,7 @@
   vars_files:
     - vars/vault.yml
   vars:
+    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/hosts /home/vlad/ops/ansible/main.yml"
     iscsi:
       server: "{{ vault.iscsi.server }}"
       mount_device: "/dev/disk/by-label/iscsi-data"
@@ -38,6 +39,18 @@
       automatic: yes
     notify:
       - Mount data
+  - name: Run Ansible hourly
+    cron: 
+      name: "Run Ansible hourly"
+      special_time: hourly
+      job: "{{ ansible_command }}"
+    become: no
+  - name: Run Ansible at boot
+    cron: 
+      name: "Run Ansible at boot"
+      special_time: reboot
+      job: "{{ ansible_command }}"
+    become: no
   handlers:
   - name: Mount data
     mount:
