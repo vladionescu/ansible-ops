@@ -10,6 +10,7 @@
     name: sabnzb
     group: downloads
     create_home: false
+    shell: /usr/bin/false
     state: present
   register: sabnzb_user
 
@@ -18,6 +19,7 @@
     name: sonarr
     group: downloads
     create_home: false
+    shell: /usr/bin/false
     state: present
   register: sonarr_user
 
@@ -26,6 +28,7 @@
     name: radarr
     group: downloads
     create_home: false
+    shell: /usr/bin/false
     state: present
   register: radarr_user
 

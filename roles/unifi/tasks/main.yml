@@ -4,6 +4,7 @@
   user:
     name: unifi
     create_home: false
+    shell: /usr/bin/false
     state: present
   register: unifi_user
 

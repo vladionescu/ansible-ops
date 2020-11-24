@@ -10,6 +10,7 @@
     name: plex
     group: downloads
     create_home: false
+    shell: /usr/bin/false
     state: present
   register: plex_user
 
