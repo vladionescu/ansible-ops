@@ -30,6 +30,7 @@
   roles:
     - docker
     - router
+    - home
     - unifi
     - downloaders
     - plex

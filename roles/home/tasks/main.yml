@@ -1,0 +1,34 @@
+---
+
+- name: Create homebridge user
+  user:
+    name: homebridge
+    create_home: false
+    shell: /usr/bin/false
+    state: present
+  register: homebridge_user
+
+- name: Homebridge user passwordless sudo
+  copy:
+    dest: "/etc/sudoers.d/homebridge"
+    mode: 0440
+    content: |
+      homebridge    ALL=(ALL) NOPASSWD: ALL
+
+- name: Homebridge container
+  docker_container:
+    name: homebridge
+    image: oznu/homebridge
+    pull: yes
+    state: started
+    restart_policy: always
+    volumes:
+      - /data/docker/homebridge:/homebridge
+    env:
+      PUID: "{{ homebridge_user.uid }}"
+      PGID: "{{ homebridge_user.group }}"
+      TZ: America/Los_Angeles
+      HOMEBRIDGE_INSECURE: "1"
+      HOMEBRIDGE_CONFIG_UI: "1"
+      HOMEBRIDGE_CONFIG_UI_PORT: "{{ homebridge.port }}"
+    network_mode: host
