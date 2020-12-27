@@ -21,6 +21,10 @@
       cloudflare_api_key: "{{ vault.ddns.cloudflare_api_key }}"
       zone: "{{ vault.ddns.zone }}"
       subdomain: "{{ vault.ddns.subdomain }}"
+    pihole:
+      query_logging: "false"
+      password: "{{ vault.pihole.password }}"
+      hostname: "{{ vault.pihole.hostname }}"
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
   roles:

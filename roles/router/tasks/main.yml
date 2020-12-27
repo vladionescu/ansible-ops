@@ -1,5 +1,8 @@
 ---
 
+- name: Pihole
+  import_tasks: pihole.yml
+
 - name: Haproxy container
   docker_container:
     name: haproxy

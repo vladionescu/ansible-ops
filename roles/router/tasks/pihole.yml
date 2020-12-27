@@ -1,0 +1,23 @@
+---
+
+- name: PiHole container
+  docker_container:
+    name: pihole
+    image: pihole/pihole
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/pihole/etc/pihole:/etc/pihole
+      - /data/docker/pihole/etc/dnsmasq.d:/etc/dnsmasq.d
+    env:
+      TZ: America/Los_Angeles
+      PIHOLE_DNS_: "{{ pihole.upstream_dns }}"
+      DNS_BOGUS_PRIV: "true"
+      TEMPERATUREUNIT: f
+      DNSMASQ_USER: pihole
+      WEBPASSWORD: "{{ pihole.password }}"
+      VIRTUAL_HOST: "{{ pihole.hostname }}"
+    ports:
+      - "{{ pihole.port }}:80"
+      - "53:53"
+      - "53:53/udp"

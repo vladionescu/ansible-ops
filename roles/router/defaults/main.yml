@@ -8,3 +8,9 @@ haproxy:
 
 certbot:
   renew_command: "certbot renew"
+
+pihole:
+  port: 8001
+  hostname: pi.hole
+  upstream_dns: "1.1.1.1;8.8.8.8"
+  password: ""
