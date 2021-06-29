@@ -13,6 +13,8 @@
       - /data/docker/haproxy/config:/usr/local/etc/haproxy
       - "{{ haproxy.tls_dir }}:/usr/local/etc/tls"
     network_mode: host
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0
 
 - name: DDNS container
   docker_container:
