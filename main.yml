@@ -14,7 +14,7 @@
     sabnzbd:
       port: 8000
     certbot:
-      renew_command: "certbot renew --deploy-hook 'cat $RENEWED_LINEAGE/fullchain.pem $RENEWED_LINEAGE/privkey.pem > $RENEWED_LINEAGE/everything.pem' --deploy-hook 'docker kill -s HUP haproxy'"
+      renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
     plex:
       claim_code: "{{ vault.plex.claim_code }}"
     ddns:

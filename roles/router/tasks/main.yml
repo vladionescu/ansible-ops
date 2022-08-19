@@ -33,6 +33,14 @@
       - certbot
       - python3-certbot-dns-cloudflare
 
+- name: Install certbot renew hook script
+  template:
+    src: certbot_renew_hook.sh
+    dest: /etc/letsencrypt/renewal-hooks/deploy/certbot_renew_hook.sh
+    owner: root
+    group: root
+    mode: '0500'
+
 - name: Renew certs every Sunday
   cron: 
     name: "Renew certs every Sunday"
