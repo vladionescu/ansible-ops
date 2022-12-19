@@ -1,0 +1,29 @@
+---
+
+- name: Unifi video container
+  docker_container:
+    name: unifi-video
+    image: pducharme/unifi-video-controller
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/unifi-video/data:/var/lib/unifi-video
+      - /data/docker/unifi-video/videos:/usr/lib/unifi-video/data/videos
+      - /data/docker/unifi-video/logs:/var/log/unifi-video
+    tmpfs:
+      - /var/cache/unifi-video
+    env:
+      PUID: "{{ unifi_user.uid }}"
+      PGID: "{{ unifi_user.group }}"
+      TZ: America/Los_Angeles
+      CREATE_TMPFS: "no"
+    ports:
+      - "{{ unifi_video.port.http }}:7080"
+      - "{{ unifi_video.port.https }}:7443"
+      - "{{ unifi_video.port.http_video }}:7445"
+      - "{{ unifi_video.port.https_video }}:7446"
+      - "{{ unifi_video.port.rtsp }}:7447"
+      - "{{ unifi_video.port.inbound_camera_stream }}:6666"
+      - "{{ unifi_video.port.camera_mgmt }}:7442"
+    capabilities:
+      - DAC_READ_SEARCH
