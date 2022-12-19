@@ -11,3 +11,12 @@ or
 
 
 Edit encrypted vars: `ansible-vault edit vars/vault.yml`
+
+Troubleshooting
+---------------
+
+If there's an error while mounting /data, then XFS needs to be checked.
+
+mount: /mnt: mount(2) system call failed: Structure needs cleaning.
+
+`xfs_repair /dev/disk/by-label/iscsi-data`
