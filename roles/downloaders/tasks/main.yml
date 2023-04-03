@@ -57,6 +57,7 @@
     volumes:
       - /data/docker/sonarr/config:/config
       - /data/downloads:/data/downloads
+      - /data/anime-manual-import:/data/anime-manual-import
       - /data/plex/shows:/data/plex/shows
     env:
       PUID: "{{ sonarr_user.uid }}"
@@ -64,6 +65,8 @@
       TZ: America/Los_Angeles
     ports:
       - "{{ sonarr.port }}:8989"
+    security_opts:
+      - "seccomp=unconfined"
 
 - name: Radarr container
   docker_container:
