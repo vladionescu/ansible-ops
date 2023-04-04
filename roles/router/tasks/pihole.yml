@@ -22,6 +22,8 @@
       DNSMASQ_USER: pihole
       WEBPASSWORD: "{{ pihole.password }}"
       VIRTUAL_HOST: "{{ pihole.hostname }}"
+    dns_servers:
+      - 1.1.1.1
     networks:
       - name: "{{ services_docker_network }}"
     ports:
