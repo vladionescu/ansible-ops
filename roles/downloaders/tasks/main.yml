@@ -32,6 +32,11 @@
     state: present
   register: radarr_user
 
+- name: Create downloaders Docker network
+  docker_network:
+    name: "{{ downloaders.docker_network }}"
+    enable_ipv6: false
+
 - name: Sabnzbd container
   docker_container:
     name: sabnzbd
@@ -45,8 +50,8 @@
       PUID: "{{ sabnzb_user.uid }}"
       PGID: "{{ sabnzb_user.group }}"
       TZ: America/Los_Angeles
-    ports:
-      - "{{ sabnzbd.port }}:8080"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
 
 - name: Sonarr container
   docker_container:
@@ -63,8 +68,8 @@
       PUID: "{{ sonarr_user.uid }}"
       PGID: "{{ sonarr_user.group }}"
       TZ: America/Los_Angeles
-    ports:
-      - "{{ sonarr.port }}:8989"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
     security_opts:
       - "seccomp=unconfined"
 
@@ -82,6 +87,6 @@
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
       TZ: America/Los_Angeles
-    ports:
-      - "{{ radarr.port }}:7878"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
 

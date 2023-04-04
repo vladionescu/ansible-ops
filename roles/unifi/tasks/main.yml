@@ -8,9 +8,14 @@
     state: present
   register: unifi_user
 
+- name: Create services Docker network
+  docker_network:
+    name: "{{ services_docker_network }}"
+    enable_ipv6: false
+
 - name: Unifi controller container
   docker_container:
-    name: unifi-controller
+    name: unifi
     image: jacobalberty/unifi
     pull: yes
     state: started
@@ -23,9 +28,9 @@
       UNIFI_UID: "{{ unifi_user.uid }}"
       UNIFI_GID: "{{ unifi_user.group }}"
       TZ: America/Los_Angeles
+    networks:
+      - name: "{{ services_docker_network }}"
     ports:
-      - "{{ unifi_controller.port.http }}:8080"
-      - "{{ unifi_controller.port.https }}:8443"
       - "{{ unifi_controller.port.http_guest_portal }}:8880"
       - "{{ unifi_controller.port.https_guest_portal }}:8843"
       - '6789:6789'

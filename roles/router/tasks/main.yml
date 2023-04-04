@@ -12,7 +12,10 @@
     volumes:
       - /data/docker/haproxy/config:/usr/local/etc/haproxy
       - "{{ haproxy.tls_dir }}:/usr/local/etc/tls"
-    network_mode: host
+    networks: "{{ haproxy.docker_networks }}"
+    ports:
+      - "80:80"
+      - "443:443"
     sysctls:
       net.ipv4.ip_unprivileged_port_start: 0
 
@@ -26,6 +29,8 @@
       API_KEY: "{{ ddns.cloudflare_api_key }}"
       ZONE: "{{ ddns.zone }}"
       SUBDOMAIN: "{{ ddns.subdomain }}"
+    networks:
+      - name: "{{ services_docker_network }}"
 
 - name: Install LetsEncrypt certbot
   package:

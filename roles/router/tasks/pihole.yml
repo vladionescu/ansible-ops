@@ -1,5 +1,10 @@
 ---
 
+- name: Create services Docker network
+  docker_network:
+    name: "{{ services_docker_network }}"
+    enable_ipv6: false
+
 - name: PiHole container
   docker_container:
     name: pihole
@@ -17,7 +22,8 @@
       DNSMASQ_USER: pihole
       WEBPASSWORD: "{{ pihole.password }}"
       VIRTUAL_HOST: "{{ pihole.hostname }}"
+    networks:
+      - name: "{{ services_docker_network }}"
     ports:
-      - "{{ pihole.port }}:80"
       - "53:53"
       - "53:53/udp"

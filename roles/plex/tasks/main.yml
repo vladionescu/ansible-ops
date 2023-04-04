@@ -14,6 +14,11 @@
     state: present
   register: plex_user
 
+- name: Create Plex Docker network
+  docker_network:
+    name: "{{ plex.docker_network }}"
+    enable_ipv6: false
+
 - name: Plex container
   docker_container:
     name: plex
@@ -30,5 +35,7 @@
       TZ: America/Los_Angeles
       ADVERTISE_IP: "{{ plex.advertise_ip }}"
       PLEX_CLAIM: "{{ plex.claim_code }}"
+    networks:
+      - name: "{{ plex.docker_network }}"
     ports:
       - "{{ plex.port }}:32400"

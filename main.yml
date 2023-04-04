@@ -11,8 +11,6 @@
     iscsi:
       server: "{{ vault.iscsi.server }}"
       mount_device: "/dev/disk/by-label/iscsi-data"
-    sabnzbd:
-      port: 8000
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
     plex:
@@ -27,13 +25,14 @@
       hostname: "{{ vault.pihole.hostname }}"
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
+    services_docker_network: "services"
   roles:
     - docker
-    - router
     - home
     - unifi
     - downloaders
     - plex
+    - router
   pre_tasks:
   - name: Connect to the only available iSCSI target on the NAS
     open_iscsi:

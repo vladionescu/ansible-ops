@@ -5,12 +5,16 @@ ddns:
 
 haproxy:
   tls_dir: /etc/letsencrypt/live/example.com
+  docker_networks:
+    - name: "bridge"
+    - name: "{{ services_docker_network }}"
+    - name: "{{ downloaders.docker_network }}"
+    - name: "{{ plex.docker_network }}"
 
 certbot:
   renew_command: "certbot renew"
 
 pihole:
-  port: 8001
   hostname: pi.hole
   upstream_dns: "1.1.1.1;8.8.8.8"
   password: ""
