@@ -35,6 +35,8 @@
       TZ: America/Los_Angeles
       ADVERTISE_IP: "{{ plex.advertise_ip }}"
       PLEX_CLAIM: "{{ plex.claim_code }}"
+    devices:
+     - "/dev/dri:/dev/dri"
     networks:
       - name: "{{ plex.docker_network }}"
     ports:
