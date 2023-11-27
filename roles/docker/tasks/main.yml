@@ -29,7 +29,7 @@
     state: latest
 
 - name: Install Docker Python libs
-  pip:
+  package:
     name:
-      - docker
-      - docker-compose
+      - python3-docker
+#      - docker-compose

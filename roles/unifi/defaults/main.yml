@@ -1,5 +1,6 @@
 unifi_controller:
   port:
+    http_and_adoption: 8080
     http_guest_portal: 8880
     https_guest_portal: 8843
 
