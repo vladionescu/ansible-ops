@@ -8,7 +8,10 @@
 - name: Create plex user
   user:
     name: plex
-    group: downloads
+    append: true
+    groups:
+      - downloads
+      - video
     create_home: false
     shell: /usr/bin/false
     state: present
