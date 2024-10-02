@@ -49,7 +49,7 @@
     env:
       PUID: "{{ sabnzb_user.uid }}"
       PGID: "{{ sabnzb_user.group }}"
-      TZ: America/Los_Angeles
+      TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
 
@@ -67,7 +67,7 @@
     env:
       PUID: "{{ sonarr_user.uid }}"
       PGID: "{{ sonarr_user.group }}"
-      TZ: America/Los_Angeles
+      TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
     security_opts:
@@ -86,7 +86,40 @@
     env:
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
-      TZ: America/Los_Angeles
+      TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
 
+- name: Create Sabnzbd dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ sabnzb_user.uid }}"
+    group: "{{ sabnzb_user.group }}"
+    mode: 0775
+  loop:
+    - /data/downloads/complete-sab
+    - /data/downloads/incomplete-sab
+    - /data/downloads/nbz-files
+
+- name: Create Sonarr dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ sonarr_user.uid }}"
+    group: "{{ sonarr_user.group }}"
+    mode: 0775
+  loop:
+    - /data/downloads/tv
+    - /data/plex/shows
+
+- name: Create Radarr dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ radarr_user.uid }}"
+    group: "{{ radarr_user.group }}"
+    mode: 0775
+  loop:
+    - /data/downloads/movies
+    - /data/plex/movies

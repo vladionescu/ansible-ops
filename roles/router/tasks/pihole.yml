@@ -15,7 +15,7 @@
       - /data/docker/pihole/etc/pihole:/etc/pihole
       - /data/docker/pihole/etc/dnsmasq.d:/etc/dnsmasq.d
     env:
-      TZ: America/Los_Angeles
+      TZ: "{{ timezone }}"
       PIHOLE_DNS_: "{{ pihole.upstream_dns }}"
       DNS_BOGUS_PRIV: "true"
       TEMPERATUREUNIT: f

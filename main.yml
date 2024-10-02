@@ -1,13 +1,14 @@
 ---
 
-- name: Set up main server
+- name: Set up cactus
   gather_facts: yes
   become: true
-  hosts: all
+  hosts: cactus
   vars_files:
-    - vars/vault.yml
+    - vars/vault_west.yml
   vars:
-    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/hosts /home/vlad/ops/ansible/main.yml"
+    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/cactus_hosts /home/vlad/ops/ansible/main.yml"
+    timezone: "{{ vault.timezone }}"
     iscsi:
       server: "{{ vault.iscsi.server }}"
       mount_device: "/dev/disk/by-label/iscsi-data"
@@ -63,3 +64,49 @@
       fstype: xfs
       state: mounted
       opts: 'inode64,_netdev'
+
+- name: Set up klaxon
+  gather_facts: yes
+  become: true
+  hosts: klaxon
+  vars_files:
+    - vars/vault_east.yml
+  vars:
+    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/klaxon_hosts /home/vlad/ops/ansible/main.yml"
+    timezone: "{{ vault.timezone }}"
+    certbot:
+      renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
+    plex:
+      claim_code: "{{ vault.plex.claim_code }}"
+    ddns:
+      cloudflare_api_key: "{{ vault.ddns.cloudflare_api_key }}"
+      zone: "{{ vault.ddns.zone }}"
+      subdomain: "{{ vault.ddns.subdomain }}"
+    pihole:
+      query_logging: "false"
+      password: "{{ vault.pihole.password }}"
+      hostname: "{{ vault.pihole.hostname }}"
+    haproxy:
+      tls_dir: "{{ vault.haproxy.tls_dir }}"
+    services_docker_network: "services"
+  roles:
+    - downloaders
+    - plex
+    - router
+  pre_tasks:
+  - name: Ensure /data exists locally
+    file:
+      path: /data
+      state: directory
+  - name: Run Ansible hourly
+    cron: 
+      name: "Run Ansible hourly"
+      special_time: hourly
+      job: "{{ ansible_command }}"
+    become: no
+  - name: Run Ansible at boot
+    cron: 
+      name: "Run Ansible at boot"
+      special_time: reboot
+      job: "{{ ansible_command }}"
+    become: no
