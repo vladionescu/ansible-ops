@@ -90,6 +90,53 @@
     networks:
       - name: "{{ downloaders.docker_network }}"
 
+- name: Bazarr container
+  docker_container:
+    name: bazarr
+    image: lscr.io/linuxserver/bazarr
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/bazarr/config:/config
+      - /data/plex/tv:/tv
+      - /data/plex/movies:/movies
+    env:
+      PUID: "{{ radarr_user.uid }}"
+      PGID: "{{ radarr_user.group }}"
+      TZ: "{{ timezone }}"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
+
+- name: Overseerr container
+  docker_container:
+    name: overseerr
+    image: sctx/overseerr
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/overseerr/config:/app/config
+    env:
+      PUID: "{{ radarr_user.uid }}"
+      PGID: "{{ radarr_user.group }}"
+      TZ: "{{ timezone }}"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
+
+- name: Prowlarr container
+  docker_container:
+    name: prowlarr
+    image: lscr.io/linuxserver/prowlarr
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/prowlarr/config:/config
+    env:
+      PUID: "{{ radarr_user.uid }}"
+      PGID: "{{ radarr_user.group }}"
+      TZ: "{{ timezone }}"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
+
 - name: Create Sabnzbd dirs
   file:
     path: "{{ item }}"
