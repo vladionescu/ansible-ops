@@ -10,16 +10,8 @@
       - software-properties-common
     state: latest
 
-- name: Add Docker repo GPG key
-  apt_key:
-    url: https://download.docker.com/linux/debian/gpg
-    state: present
-
-- name: Add Docker repo
-  apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
-    filename: docker
-    state: present
+# Install the correct repo per distro
+- include_tasks: "{{ ansible_distribution }}.yml"
 
 - name: Install Docker engine
   package:
@@ -33,3 +25,9 @@
     name:
       - python3-docker
 #      - docker-compose
+
+- name: Cleanup Docker cruft
+  community.docker.docker_prune:
+    containers: true
+    images: true
+    builder_cache: true

@@ -1,0 +1,42 @@
+---
+
+- name: Install Tailscale
+  ansible.builtin.package:
+    name:
+      - tailscale
+    state: latest
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_file: /etc/sysctl.d/99-tailscale.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  when: tailscale.exit_node or tailscale.subnet_router
+
+- name: Enable IPv6 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    sysctl_file: /etc/sysctl.d/99-tailscale.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  when: tailscale.exit_node or tailscale.subnet_router
+
+- name: Enable Tailscale exit node
+  become: true
+  ansible.builtin.command: "tailscale set --advertise-exit-node"
+  when: tailscale.exit_node
+
+- name: Enable Tailscale subnet routing
+  become: true
+  ansible.builtin.command: "tailscale set --advertise-routes {{ tailscale.routes }}"
+  when: tailscale.subnet_router
+
+- name: Run Tailscale
+  become: true
+  ansible.builtin.command: "tailscale up"
+

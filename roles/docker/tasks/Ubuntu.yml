@@ -1,0 +1,12 @@
+---
+
+- name: Add Docker repo GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repo
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu noble stable
+    filename: docker
+    state: present
