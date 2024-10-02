@@ -11,7 +11,7 @@
     state: latest
 
 # Install the correct repo per distro
-- include_tasks: "{{ ansible_distribution }}".yml
+- include_tasks: "{{ ansible_distribution }}.yml"
 
 - name: Install Docker engine
   package:
