@@ -27,12 +27,15 @@
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
     services_docker_network: "services"
+    tailscale:
+      routes: "{{ vault.tailscale.routes }}"
   roles:
     - docker
     - home
     - downloaders
     - plex
     - router
+    - tailscale
   pre_tasks:
   - name: Connect to the only available iSCSI target on the NAS
     open_iscsi:
@@ -88,11 +91,14 @@
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
     services_docker_network: "services"
+    tailscale:
+      routes: "{{ vault.tailscale.routes }}"
   roles:
     - docker
     - downloaders
     - plex
     - router
+    - tailscale
   pre_tasks:
   - name: Ensure /data exists locally
     file:
