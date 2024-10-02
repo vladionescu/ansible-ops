@@ -1,5 +1,8 @@
 ---
 
+# Install the correct repo per distro
+- include_tasks: "{{ ansible_distribution }}.yml"
+
 - name: Install Tailscale
   ansible.builtin.package:
     name:

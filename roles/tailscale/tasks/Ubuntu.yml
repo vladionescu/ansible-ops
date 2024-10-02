@@ -1,0 +1,12 @@
+---
+
+- name: Add Tailscale repo GPG key
+  apt_key:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+    state: present
+
+- name: Add Tailscale repo
+  apt_repository:
+    repo: deb https://pkgs.tailscale.com/stable/ubuntu noble main
+    filename: docker
+    state: present
