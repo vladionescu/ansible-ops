@@ -30,7 +30,6 @@
   roles:
     - docker
     - home
-    - unifi
     - downloaders
     - plex
     - router
@@ -90,6 +89,7 @@
       tls_dir: "{{ vault.haproxy.tls_dir }}"
     services_docker_network: "services"
   roles:
+    - docker
     - downloaders
     - plex
     - router

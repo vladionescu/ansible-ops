@@ -1,0 +1,12 @@
+---
+
+- name: Add Docker repo GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add Docker repo
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
+    filename: docker
+    state: present
