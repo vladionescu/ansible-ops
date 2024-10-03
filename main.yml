@@ -74,7 +74,7 @@
   vars_files:
     - vars/vault_east.yml
   vars:
-    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/klaxon_hosts /home/vlad/ops/ansible/main.yml"
+    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible-ops/klaxon_hosts /home/vlad/ops/ansible-ops/main.yml"
     timezone: "{{ vault.timezone }}"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
