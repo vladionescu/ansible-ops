@@ -98,8 +98,8 @@
     state: started
     volumes:
       - /data/docker/bazarr/config:/config
-      - /data/plex/tv:/tv
-      - /data/plex/movies:/movies
+      - /data/plex/shows:/data/plex/shows
+      - /data/plex/movies:/data/plex/movies
     env:
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
