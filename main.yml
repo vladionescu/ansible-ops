@@ -1,5 +1,15 @@
 ---
 
+- name: Pre-task
+  gather_facts: yes
+  become: true
+  hosts: all, localhost
+  connection: local
+  tasks:
+    - name: Add host to correct group
+      group_by:
+        key: "{{ ansible_hostname }}"
+
 - name: Set up cactus
   gather_facts: yes
   become: true
@@ -7,7 +17,6 @@
   vars_files:
     - vars/vault_west.yml
   vars:
-    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/cactus_hosts /home/vlad/ops/ansible/main.yml"
     timezone: "{{ vault.timezone }}"
     iscsi:
       server: "{{ vault.iscsi.server }}"
@@ -30,6 +39,7 @@
     tailscale:
       routes: "{{ vault.tailscale.routes }}"
   roles:
+    - core
     - docker
     - home
     - downloaders
@@ -46,18 +56,6 @@
       automatic: yes
     notify:
       - Mount data
-  - name: Run Ansible hourly
-    cron: 
-      name: "Run Ansible hourly"
-      special_time: hourly
-      job: "{{ ansible_command }}"
-    become: no
-  - name: Run Ansible at boot
-    cron: 
-      name: "Run Ansible at boot"
-      special_time: reboot
-      job: "{{ ansible_command }}"
-    become: no
   handlers:
   - name: Mount data
     mount:
@@ -74,7 +72,6 @@
   vars_files:
     - vars/vault_east.yml
   vars:
-    ansible_command: "ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt -i /home/vlad/ops/ansible/klaxon_hosts /home/vlad/ops/ansible/main.yml"
     timezone: "{{ vault.timezone }}"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
@@ -94,6 +91,7 @@
     tailscale:
       routes: "{{ vault.tailscale.routes }}"
   roles:
+    - core
     - docker
     - downloaders
     - plex
@@ -104,15 +102,3 @@
     file:
       path: /data
       state: directory
-  - name: Run Ansible hourly
-    cron: 
-      name: "Run Ansible hourly"
-      special_time: hourly
-      job: "{{ ansible_command }}"
-    become: no
-  - name: Run Ansible at boot
-    cron: 
-      name: "Run Ansible at boot"
-      special_time: reboot
-      job: "{{ ansible_command }}"
-    become: no

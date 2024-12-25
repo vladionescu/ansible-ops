@@ -1,0 +1,2 @@
+core:
+  ansible_command: ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt /home/vlad/ops/ansible/main.yml

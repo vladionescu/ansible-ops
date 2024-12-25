@@ -1,0 +1,31 @@
+---
+- name: Ensure /etc/ansible directory exists
+  ansible.builtin.file:
+    path: /etc/ansible
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Deploy ansible.cfg
+  ansible.builtin.copy:
+    src: ansible.cfg
+    dest: /etc/ansible/ansible.cfg
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: Run Ansible hourly
+  cron:
+    name: "Run Ansible hourly"
+    special_time: hourly
+    job: "{{ core.ansible_command }}"
+  become: no
+
+- name: Run Ansible at boot
+  cron:
+    name: "Run Ansible at boot"
+    special_time: reboot
+    job: "{{ core.ansible_command }}"
+  become: no
