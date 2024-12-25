@@ -32,6 +32,15 @@
     state: present
   register: radarr_user
 
+- name: Create readarr user
+  user:
+    name: readarr
+    group: downloads
+    create_home: false
+    shell: /usr/bin/false
+    state: present
+  register: readarr_user
+
 - name: Create downloaders Docker network
   docker_network:
     name: "{{ downloaders.docker_network }}"
@@ -137,6 +146,23 @@
     networks:
       - name: "{{ downloaders.docker_network }}"
 
+- name: Readarr container
+  docker_container:
+    name: readarr
+    image: lscr.io/linuxserver/readarr:develop
+    pull: yes
+    state: started
+    volumes:
+      - /data/docker/readarr/config:/config
+      - /data/downloads/books:/data/downloads/books
+      - /data/books:/data/books
+    env:
+      PUID: "{{ readarr_user.uid }}"
+      PGID: "{{ readarr_user.group }}"
+      TZ: "{{ timezone }}"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
+
 - name: Create Sabnzbd dirs
   file:
     path: "{{ item }}"
@@ -170,3 +196,14 @@
   loop:
     - /data/downloads/movies
     - /data/plex/movies
+
+- name: Create Readarr dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ readarr_user.uid }}"
+    group: "{{ readarr_user.group }}"
+    mode: 0775
+  loop:
+    - /data/downloads/books
+    - /data/books
