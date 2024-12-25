@@ -39,6 +39,10 @@
   ansible.builtin.command: "tailscale set --advertise-routes {{ tailscale.routes }}"
   when: tailscale.subnet_router
 
+- name: Enable Tailscale DNS
+  become: true
+  ansible.builtin.command: "tailscale set --accept-dns={{ tailscale.enable_dns }}"
+
 - name: Run Tailscale
   become: true
   ansible.builtin.command: "tailscale up"

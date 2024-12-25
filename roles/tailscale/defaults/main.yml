@@ -2,3 +2,4 @@ tailscale:
   exit_node: true
   subnet_router: true
   routes: "192.168.9.0/24"
+  enable_dns: false
