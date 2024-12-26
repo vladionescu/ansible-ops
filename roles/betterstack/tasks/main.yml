@@ -1,0 +1,16 @@
+---
+- name: Install Vector
+  shell: curl --tlsv1.2 -sSfL https://sh.vector.dev | bash -s -- -y
+
+- name: Vector config directory
+  file:
+    path: /etc/vector
+    state: directory
+    mode: '0755'
+
+- name: Install Vector config
+  template:
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yaml
+    mode: '0644'
+  notify: restart vector

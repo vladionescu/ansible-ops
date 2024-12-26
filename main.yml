@@ -23,6 +23,8 @@
       mount_device: "/dev/disk/by-label/iscsi-data"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
+    betterstack:
+      token: "{{ vault.betterstack.token }}"
     plex:
       claim_code: "{{ vault.plex.claim_code }}"
     ddns:
@@ -40,6 +42,7 @@
       routes: "{{ vault.tailscale.routes }}"
   roles:
     - core
+    - betterstack
     - docker
     - home
     - downloaders
@@ -75,6 +78,8 @@
     timezone: "{{ vault.timezone }}"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
+    betterstack:
+      token: "{{ vault.betterstack.token }}"
     plex:
       claim_code: "{{ vault.plex.claim_code }}"
     ddns:
@@ -92,6 +97,7 @@
       routes: "{{ vault.tailscale.routes }}"
   roles:
     - core
+    - betterstack
     - docker
     - downloaders
     - plex
