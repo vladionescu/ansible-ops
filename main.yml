@@ -59,9 +59,6 @@
       show_nodes: yes
       login: yes
       auto_node_startup: yes
-    notify:
-      - Mount data
-  handlers:
   - name: Mount data
     mount:
       path: /data
