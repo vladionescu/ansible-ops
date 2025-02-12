@@ -1,12 +1,12 @@
 ---
 
 - name: Add Tailscale repo GPG key
-  apt_key:
-    url: https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg
-    state: present
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg
+    dest: /etc/apt/keyrings/tailscale.gpg
 
 - name: Add Tailscale repo
   apt_repository:
-    repo: deb https://pkgs.tailscale.com/stable/debian bullseye main
-    filename: docker
+    repo: deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main
+    filename: tailscale
     state: present

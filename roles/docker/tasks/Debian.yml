@@ -1,12 +1,12 @@
 ---
 
 - name: Add Docker repo GPG key
-  apt_key:
+  ansible.builtin.get_url:
     url: https://download.docker.com/linux/debian/gpg
-    state: present
+    dest: /etc/apt/keyrings/docker.asc
 
 - name: Add Docker repo
   apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
+    repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable
     filename: docker
     state: present
