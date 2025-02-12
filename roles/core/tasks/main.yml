@@ -1,4 +1,11 @@
 ---
+  
+- include_tasks: 
+    file: "{{ core_repo_file }}"
+  when: core_repo_file is file
+  vars:
+    core_repo_file: "{{ playbook_dir }}/roles/core/tasks/{{ ansible_distribution }}.yml"
+
 - name: Ensure /etc/ansible directory exists
   ansible.builtin.file:
     path: /etc/ansible

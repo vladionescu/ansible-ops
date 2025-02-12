@@ -1,0 +1,7 @@
+---
+
+- name: Disable Ubuntu Pro spam
+  copy:
+    content: ""
+    dest: /etc/apt/apt.conf.d/20apt-esm-hook.conf
+    force: yes
