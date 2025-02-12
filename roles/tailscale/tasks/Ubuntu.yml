@@ -1,12 +1,12 @@
 ---
 
 - name: Add Tailscale repo GPG key
-  apt_key:
-    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
-    state: present
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/{{ ansible_distribution_release }}.noarmor.gpg
+    dest: /etc/apt/keyrings/tailscale.gpg
 
 - name: Add Tailscale repo
   apt_repository:
-    repo: deb https://pkgs.tailscale.com/stable/ubuntu noble main
-    filename: docker
+    repo: deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/ubuntu {{ ansible_distribution_release }} main
+    filename: tailscale
     state: present
