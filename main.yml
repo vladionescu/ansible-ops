@@ -20,6 +20,7 @@
     timezone: "{{ vault.timezone }}"
     iscsi:
       server: "{{ vault.iscsi.server }}"
+      target: "{{ vault.iscsi.target }}"
       mount_device: "/dev/disk/by-label/iscsi-data"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"
@@ -53,10 +54,11 @@
   - name: Connect to the only available iSCSI target on the NAS
     open_iscsi:
       portal: '{{ iscsi.server }}'
+      target: '{{ iscsi.target }}'
       discover: yes
       show_nodes: yes
       login: yes
-      automatic: yes
+      auto_node_startup: yes
     notify:
       - Mount data
   handlers:
