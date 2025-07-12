@@ -149,7 +149,7 @@
 - name: Readarr container
   docker_container:
     name: readarr
-    image: lscr.io/linuxserver/readarr:develop
+    image: lscr.io/linuxserver/readarr:0.4.19-nightly
     pull: yes
     state: started
     volumes:
