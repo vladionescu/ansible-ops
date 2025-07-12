@@ -107,3 +107,9 @@
     file:
       path: /data
       state: directory
+  - name: Mount data
+    mount:
+      path: /data
+      src: '/dev/disk/by-partlabel/Klaxon_USB_1'
+      fstype: ext4
+      state: mounted
