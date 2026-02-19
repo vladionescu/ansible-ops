@@ -163,6 +163,27 @@
     networks:
       - name: "{{ downloaders.docker_network }}"
 
+- name: Unpackerr container
+  docker_container:
+    name: unpackerr
+    image: golift/unpackerr
+    pull: yes
+    state: started
+    user: "{{ sabnzb_user.uid }}:{{ sabnzb_user.group }}"
+    volumes:
+      - /data/docker/unpackerr/config:/config
+      - /data/downloads:/data/downloads
+    env:
+      TZ: "{{ timezone }}"
+      UN_SONARR_0_URL: http://sonarr:8989
+      UN_SONARR_0_API_KEY: "{{ unpackerr.sonarr_api_key }}"
+      UN_RADARR_0_URL: http://radarr:7878
+      UN_RADARR_0_API_KEY: "{{ unpackerr.radarr_api_key }}"
+      UN_READARR_0_URL: http://readarr:8787
+      UN_READARR_0_API_KEY: "{{ unpackerr.readarr_api_key }}"
+    networks:
+      - name: "{{ downloaders.docker_network }}"
+
 - name: Create Sabnzbd dirs
   file:
     path: "{{ item }}"

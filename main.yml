@@ -38,6 +38,10 @@
       hostname: "{{ vault.pihole.hostname }}"
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
+    unpackerr:
+      sonarr_api_key: "{{ vault.unpackerr.sonarr_api_key }}"
+      radarr_api_key: "{{ vault.unpackerr.radarr_api_key }}"
+      readarr_api_key: "{{ vault.unpackerr.readarr_api_key }}"
     services_docker_network: "services"
     tailscale:
       routes: "{{ vault.tailscale.routes }}"
@@ -91,6 +95,10 @@
       hostname: "{{ vault.pihole.hostname }}"
     haproxy:
       tls_dir: "{{ vault.haproxy.tls_dir }}"
+    unpackerr:
+      sonarr_api_key: "{{ vault.unpackerr.sonarr_api_key }}"
+      radarr_api_key: "{{ vault.unpackerr.radarr_api_key }}"
+      readarr_api_key: "{{ vault.unpackerr.readarr_api_key }}"
     services_docker_network: "services"
     tailscale:
       routes: "{{ vault.tailscale.routes }}"
