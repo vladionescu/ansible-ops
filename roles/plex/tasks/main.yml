@@ -4,6 +4,7 @@
   group:
     name: downloads
     state: present
+  tags: [media_migrate, plex_cutover]
 
 - name: Create plex user
   user:
@@ -16,20 +17,28 @@
     shell: /usr/bin/false
     state: present
   register: plex_user
+  tags: [media_migrate, plex_cutover]
 
 - name: Create Plex Docker network
   docker_network:
     name: "{{ plex.docker_network }}"
     enable_ipv6: false
 
+- name: Prepare Plex configuration on SSD
+  include_tasks: ../../downloaders/tasks/migrate_config.yml
+  vars:
+    media_service_name: plex
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate, plex_cutover]
+
 - name: Plex container
   docker_container:
     name: plex
     image: plexinc/pms-docker
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
     volumes:
-      - /data/docker/plex/config:/config
+      - "{{ media_config_root }}/plex/config:/config"
       - /data/downloads:/data/downloads
       - /data/plex:/data/plex
     env:
@@ -45,10 +54,15 @@
     ports:
       - "{{ plex.port }}:32400"
 
+  tags: [media_migrate, plex_cutover]
+
 # Applies preferences live; no Plex restart or container recreation.
+
 - name: Schedule Plex marker analysis in the maintenance window
   command: /usr/local/sbin/reconcile-media --plex-only
+  environment:
+    MEDIA_CONFIG_ROOT: "{{ media_config_root }}"
   register: plex_settings_result
   changed_when: "'Changed:' in plex_settings_result.stdout"
   when: downloaders_optimizations_enabled | default(false)
-  tags: [arr_settings]
+  tags: [arr_settings, plex_cutover]

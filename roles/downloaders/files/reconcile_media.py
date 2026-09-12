@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 
 os.umask(0o077)
 CHANGES = []
+CONFIG_ROOT = Path(os.environ.get('MEDIA_CONFIG_ROOT', '/data/docker'))
 BACKUP = Path('/data/docker/connection-backups') / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
 
@@ -43,9 +44,17 @@ class API:
         self.name = name
         self.base = f'http://{address(name)}:{port}/api/v{version}/'
         if name == 'seerr':
-            self.key = json.loads(Path('/data/docker/seerr/config/settings.json').read_text())['main']['apiKey']
+            self.key = json.loads((CONFIG_ROOT / 'seerr/config/settings.json').read_text())['main']['apiKey']
         else:
-            self.key = ET.parse(f'/data/docker/{name}/config/config.xml').findtext('ApiKey')
+            self.key = ET.parse(CONFIG_ROOT / name / 'config/config.xml').findtext('ApiKey')
+        for attempt in range(30):
+            try:
+                self.request('status' if name == 'seerr' else 'system/status')
+                break
+            except (RuntimeError, urllib.error.URLError, TimeoutError):
+                if attempt == 29:
+                    raise RuntimeError(name + ' did not become ready') from None
+                time.sleep(2)
 
     def request(self, path, data=None, method=None):
         request = urllib.request.Request(
@@ -77,7 +86,7 @@ def fields(obj, values):
 
 def main():
     sonarr, radarr, prowlarr, seerr = API('sonarr', 8989), API('radarr', 7878), API('prowlarr', 9696, 1), API('seerr', 5055, 1)
-    sab_key = re.search(r'^api_key\s*=\s*(\S+)', Path('/data/docker/sabnzbd/config/sabnzbd.ini').read_text(), re.M).group(1)
+    sab_key = re.search(r'^api_key\s*=\s*(\S+)', (CONFIG_ROOT / 'sabnzbd/config/sabnzbd.ini').read_text(), re.M).group(1)
 
     def sab(**args):
         args.update(apikey=sab_key, output='json')
@@ -90,6 +99,14 @@ def main():
         result = sab(mode='set_config', section='misc', keyword='host_whitelist', value=','.join(allowed + ['sabnzbd']))
         assert 'sabnzbd' in result['config']['misc']['host_whitelist']
         changed('sab-host-whitelist')
+    # Completed output still goes to one HDD. Avoid multiple direct unpackers
+    # competing for that disk while Plex reads it; retain cache/network limits.
+    unpackers = sab(mode='get_config', section='misc', keyword='direct_unpack_threads')['config']['misc']['direct_unpack_threads']
+    if int(unpackers) != 1:
+        backup('sab-direct-unpack-threads', unpackers)
+        result = sab(mode='set_config', section='misc', keyword='direct_unpack_threads', value=1)
+        assert int(result['config']['misc']['direct_unpack_threads']) == 1
+        changed('sab-direct-unpack-threads')
     for api in [sonarr, radarr]:
         for old in api.request('downloadclient'):
             if old['implementation'] == 'Sabnzbd':
@@ -188,11 +205,18 @@ def main():
 
 
 def plex_settings():
-    token = ET.parse('/data/docker/plex/config/Library/Application Support/Plex Media Server/Preferences.xml').getroot().get('PlexOnlineToken')
+    token = ET.parse(CONFIG_ROOT / 'plex/config/Library/Application Support/Plex Media Server/Preferences.xml').getroot().get('PlexOnlineToken')
     headers = {'X-Plex-Token': token}
     url = 'http://127.0.0.1:32400/:/prefs'
-    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
-        prefs = {x.get('id'): x.get('value') for x in ET.fromstring(response.read())}
+    for attempt in range(30):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as response:
+                prefs = {x.get('id'): x.get('value') for x in ET.fromstring(response.read())}
+            break
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == 29:
+                raise RuntimeError('Plex did not become ready') from None
+            time.sleep(2)
     desired = {'GenerateIntroMarkerBehavior': 'scheduled', 'GenerateCreditsMarkerBehavior': 'scheduled'}
     delta = {k: v for k, v in desired.items() if prefs.get(k) != v}
     if delta:

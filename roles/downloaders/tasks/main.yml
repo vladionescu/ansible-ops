@@ -4,7 +4,7 @@
   group:
     name: downloads
     state: present
-  tags: [arr_storage]
+  tags: [arr_storage, media_migrate]
 
 - name: Create sabnzb user
   user:
@@ -14,6 +14,7 @@
     shell: /usr/bin/false
     state: present
   register: sabnzb_user
+  tags: [media_migrate]
 
 - name: Create sonarr user
   user:
@@ -23,7 +24,7 @@
     shell: /usr/bin/false
     state: present
   register: sonarr_user
-  tags: [arr_storage]
+  tags: [arr_storage, media_migrate]
 
 - name: Create radarr user
   user:
@@ -33,7 +34,7 @@
     shell: /usr/bin/false
     state: present
   register: radarr_user
-  tags: [arr_storage]
+  tags: [arr_storage, media_migrate]
 
 - name: Create readarr user
   user:
@@ -43,27 +44,46 @@
     shell: /usr/bin/false
     state: present
   register: readarr_user
+  tags: [media_migrate]
 
 - name: Create downloaders Docker network
   docker_network:
     name: "{{ downloaders.docker_network }}"
     enable_ipv6: false
 
+- name: Prepare sabnzbd configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: sabnzbd
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate]
+
+- name: Prepare unfinished downloads on SSD
+  include_tasks: migrate_incomplete.yml
+  when: media_incomplete_root != '/data/downloads'
+  tags: [media_migrate]
+
 - name: Sabnzbd container
   docker_container:
     name: sabnzbd
     image: linuxserver/sabnzbd
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
-    volumes:
-      - /data/docker/sabnzbd/config:/config
-      - /data/downloads:/data/downloads
+    volumes: "{{ [media_config_root ~ '/sabnzbd/config:/config', '/data/downloads:/data/downloads'] + ([media_incomplete_root ~ ':' ~ media_incomplete_root] if media_incomplete_root != '/data/downloads' else []) }}"
     env:
       PUID: "{{ sabnzb_user.uid }}"
       PGID: "{{ sabnzb_user.group }}"
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [media_migrate]
+
+- name: Prepare sonarr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: sonarr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate, arr_storage]
 
 - name: Sonarr container
   docker_container:
@@ -71,7 +91,7 @@
     image: linuxserver/sonarr
     pull: "{{ downloaders_pull_images }}"
     state: started
-    volumes: "{{ ['/data/docker/sonarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else ['/data/docker/sonarr/config:/config', '/data/downloads:/data/downloads', '/data/anime-manual-import:/data/anime-manual-import', '/data/plex/shows:/data/plex/shows'] }}"
+    volumes: "{{ [media_config_root ~ '/sonarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else [media_config_root ~ '/sonarr/config:/config', '/data/downloads:/data/downloads', '/data/anime-manual-import:/data/anime-manual-import', '/data/plex/shows:/data/plex/shows'] }}"
     env:
       PUID: "{{ sonarr_user.uid }}"
       PGID: "{{ sonarr_user.group }}"
@@ -80,7 +100,14 @@
       - name: "{{ downloaders.docker_network }}"
     security_opts:
       - "seccomp=unconfined"
-  tags: [arr_storage]
+  tags: [arr_storage, media_migrate]
+
+- name: Prepare radarr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: radarr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate, arr_storage]
 
 - name: Radarr container
   docker_container:
@@ -88,23 +115,30 @@
     image: linuxserver/radarr
     pull: "{{ downloaders_pull_images }}"
     state: started
-    volumes: "{{ ['/data/docker/radarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else ['/data/docker/radarr/config:/config', '/data/downloads:/data/downloads', '/data/plex/movies:/data/plex/movies'] }}"
+    volumes: "{{ [media_config_root ~ '/radarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else [media_config_root ~ '/radarr/config:/config', '/data/downloads:/data/downloads', '/data/plex/movies:/data/plex/movies'] }}"
     env:
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
-  tags: [arr_storage]
+  tags: [arr_storage, media_migrate]
+
+- name: Prepare bazarr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: bazarr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate]
 
 - name: Bazarr container
   docker_container:
     name: bazarr
     image: lscr.io/linuxserver/bazarr
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
     volumes:
-      - /data/docker/bazarr/config:/config
+      - "{{ media_config_root }}/bazarr/config:/config"
       - /data/plex/shows:/data/plex/shows
       - /data/plex/movies:/data/plex/movies
     env:
@@ -113,14 +147,23 @@
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [media_migrate]
 
 - name: Seerr config permissions
   file:
-    path: /data/docker/seerr/config
+    path: "{{ media_config_root }}/seerr/config"
     state: directory
     owner: "1000"
     group: "1000"
     recurse: yes
+  tags: [media_migrate]
+
+- name: Prepare seerr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: seerr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate]
 
 - name: Seerr container
   docker_container:
@@ -128,10 +171,10 @@
     image: ghcr.io/seerr-team/seerr:latest
     init: yes
     restart_policy: unless-stopped
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
     volumes:
-      - /data/docker/seerr/config:/app/config
+      - "{{ media_config_root }}/seerr/config:/app/config"
     env:
       TZ: "{{ timezone }}"
     healthcheck:
@@ -144,30 +187,46 @@
       retries: 3
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [media_migrate]
+
+- name: Prepare prowlarr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: prowlarr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate]
 
 - name: Prowlarr container
   docker_container:
     name: prowlarr
     image: lscr.io/linuxserver/prowlarr
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
     volumes:
-      - /data/docker/prowlarr/config:/config
+      - "{{ media_config_root }}/prowlarr/config:/config"
     env:
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [media_migrate]
+
+- name: Prepare readarr configuration on SSD
+  include_tasks: migrate_config.yml
+  vars:
+    media_service_name: readarr
+  when: media_config_root != '/data/docker'
+  tags: [media_migrate]
 
 - name: Readarr container
   docker_container:
     name: readarr
     image: lscr.io/linuxserver/readarr:0.4.19-nightly
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
     volumes:
-      - /data/docker/readarr/config:/config
+      - "{{ media_config_root }}/readarr/config:/config"
       - /data/downloads/books:/data/downloads/books
       - /data/books:/data/books
     env:
@@ -176,6 +235,7 @@
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [media_migrate]
 
 - name: Unpackerr container
   docker_container:
@@ -250,11 +310,10 @@
     - /data/books
 
 # Opt-in on klaxon only. SAB already extracts Usenet downloads.
-- name: Stop redundant Usenet unpacker
+- name: Disable redundant Usenet unpacker
   docker_container:
     name: unpackerr
-    state: stopped
-    restart_policy: "no"
+    state: absent
   when: downloaders_optimizations_enabled
   tags: [arr_settings]
 
@@ -270,6 +329,8 @@
 
 - name: Reconcile internal media connections and regular TV defaults
   command: /usr/local/sbin/reconcile-media
+  environment:
+    MEDIA_CONFIG_ROOT: "{{ media_config_root }}"
   register: media_settings_result
   changed_when: "'Changed:' in media_settings_result.stdout"
   when: downloaders_optimizations_enabled

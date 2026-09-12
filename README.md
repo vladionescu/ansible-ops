@@ -27,11 +27,11 @@ Media stack maintenance (klaxon)
 Klaxon opts into `downloaders_optimizations_enabled` in `main.yml`.
 Cactus retains its existing container layout and settings.
 
-Apply the media changes without upgrading images or restarting Plex:
+Apply the SSD migration and media settings without upgrading images (first run briefly restarts each migrated service, including Plex):
 
 ```sh
 ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt main.yml \
-  --tags arr_storage,arr_settings -e downloaders_pull_images=false
+  --tags media_migrate,arr_settings -e downloaders_pull_images=false
 ```
 
 - `arr_storage` recreates only Sonarr and Radarr as necessary, with a shared
@@ -39,10 +39,10 @@ ansible-playbook --vault-password-file /home/vlad/ops/vault_pass.txt main.yml \
   mount allows hardlinks and atomic moves between download categories and
   libraries. These trusted importers can access the wider /data tree; individual
   application users and existing filesystem permissions remain in use.
-- `arr_settings` reconciles settings through application APIs and stops the
-  redundant Usenet-only Unpackerr container. SABnzbd continues to unpack.
+- `arr_settings` reconciles settings through application APIs and removes the
+  redundant Usenet-only Unpackerr container (its definition is retained). SABnzbd continues to unpack.
 - The reconciler reads credentials from existing persistent application
-  configurations, discovers container IPs for management, and saves Docker DNS
+  configurations using the Ansible-provided MEDIA_CONFIG_ROOT, discovers container IPs for management, and saves Docker DNS
   names for inter-service connections. No credentials are stored in Git.
 - Changes are backed up under `/data/docker/connection-backups/<timestamp>/`,
   readable only by root. API failures are reported without printing secrets.
@@ -74,7 +74,51 @@ APIs using the root-only backups. Turning off the opt-in alone intentionally
 does not overwrite persistent app settings. Restore the former Seerr/Plex
 preferences explicitly if desired.
 
-Deferred: SSD migration of application databases/Plex metadata, SSD download
-staging, and benchmark-based SAB cache/unpack tuning. Plex metadata migration
-requires a separate stop/copy/start maintenance window. No such migration is
-performed by these tags.
+SSD storage
+-----------
+
+Klaxon uses /srv/media-config/<service>/config on the system SSD for SABnzbd,
+Sonarr, Radarr, Bazarr, Seerr, Prowlarr, Readarr, and Plex. The media_migrate tag
+copies live config first, stops one service, performs a final sync, verifies
+checksums, and switches its mount. Marker files prevent a redeploy from copying
+stale HDD data over the active SSD configuration. Copy failure restarts the
+original container and stops the deployment.
+
+SAB's unfinished downloads live at /srv/media-downloads/incomplete-sab.
+Completed downloads and media remain on /data, preserving atomic Arr imports.
+Partial downloads are copied and verified with SAB stopped. One direct unpacker
+is allowed because completed output still shares one HDD with Plex playback.
+Existing cache size and network bandwidth limits are retained.
+
+Original HDD configurations and partial-download directories are retained for
+rollback; they are no longer current after cutover. Backups must now include
+/srv/media-config. Do not simply remount the old copies after substantial use:
+stop the service and sync its current SSD data back first, or restore a backup.
+
+The targeted migration does not pull new images. A subsequent normal full
+playbook retains its existing image-update behavior. To reconcile settings
+manually after migration:
+
+    sudo env MEDIA_CONFIG_ROOT=/srv/media-config /usr/local/sbin/reconcile-media
+    sudo env MEDIA_CONFIG_ROOT=/srv/media-config /usr/local/sbin/reconcile-media --plex-only
+
+Repeat media_migrate runs skip completed copies and should not restart
+unchanged containers. For rollback, stop the affected service, sync its current
+SSD config back to its original HDD path, reset media_config_root to
+/data/docker, and redeploy it. To roll back SAB unfinished downloads, also
+stop SAB, copy current partials back, reset download_dir in its stopped config
+and media_incomplete_root, then redeploy. Do not delete migration markers
+unless intentionally rebuilding a destination from an authoritative source.
+
+
+Migration validation on 2026-09-12: all eight services use SSD configuration
+mounts; Arr/Prowlarr database quick checks and health checks passed; Plex kept
+its server identity and both libraries. A small 32 MiB direct-write/fsync
+check measured about 277 MiB/s on SSD and 77 MiB/s on HDD with services running.
+These are short concurrent-load samples, not sustained-download guarantees.
+The initial Plex cutover exposed a missing task tag, now corrected; the
+plex_cutover tag includes migration prerequisites and startup.
+
+Use --check with the migration/settings tags to preview a repeat deployment.
+Completed migration copies should be skipped and unchanged containers should
+not be recreated. The Add host to correct group task may still report changed.

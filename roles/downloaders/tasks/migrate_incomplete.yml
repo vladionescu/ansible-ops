@@ -1,0 +1,84 @@
+---
+- name: Move SAB unfinished downloads to SSD
+  tags: [media_migrate]
+  block:
+    - name: Check unfinished-download migration marker
+      stat:
+        path: "{{ media_incomplete_root }}/.migrated-incomplete"
+      register: incomplete_marker
+
+    - name: Create SSD download directory
+      file:
+        path: "{{ media_incomplete_root }}/incomplete-sab"
+        state: directory
+        owner: "{{ sabnzb_user.uid }}"
+        group: "{{ sabnzb_user.group }}"
+        mode: '0775'
+
+    - name: Copy unfinished downloads without active writers
+      when: not incomplete_marker.stat.exists
+      block:
+        - name: Stop SAB for unfinished download migration
+          docker_container:
+            name: sabnzbd
+            state: stopped
+
+        - name: Preserve partial downloads on SSD
+          command:
+            argv:
+              - rsync
+              - -aHS
+              - --numeric-ids
+              - --delete
+              - /data/downloads/incomplete-sab/
+              - "{{ media_incomplete_root }}/incomplete-sab/"
+
+        - name: Verify partial download copy
+          command:
+            argv:
+              - rsync
+              - -aHnci
+              - --numeric-ids
+              - --delete
+              - /data/downloads/incomplete-sab/
+              - "{{ media_incomplete_root }}/incomplete-sab/"
+          register: incomplete_verify
+          changed_when: false
+          failed_when: incomplete_verify.rc != 0 or incomplete_verify.stdout | length > 0
+
+        - name: Record partial download migration
+          copy:
+            content: "Original partial downloads retained at /data/downloads/incomplete-sab\n"
+            dest: "{{ media_incomplete_root }}/.migrated-incomplete"
+            mode: '0600'
+
+      rescue:
+        - name: Restart original SAB after failed copy
+          docker_container:
+            name: sabnzbd
+            state: started
+        - fail:
+            msg: "Partial-download migration failed; original SAB restarted."
+
+    - name: Check whether SAB download path needs changing
+      lineinfile:
+        path: "{{ media_config_root }}/sabnzbd/config/sabnzbd.ini"
+        regexp: '^download_dir ='
+        line: "download_dir = {{ media_incomplete_root }}/incomplete-sab"
+      check_mode: true
+      register: sab_download_path_plan
+
+    - name: Stop SAB before changing its download path
+      docker_container:
+        name: sabnzbd
+        state: stopped
+      when: sab_download_path_plan.changed
+
+    - name: Set SAB unfinished downloads to SSD
+      lineinfile:
+        path: "{{ media_config_root }}/sabnzbd/config/sabnzbd.ini"
+        regexp: '^download_dir ='
+        line: "download_dir = {{ media_incomplete_root }}/incomplete-sab"
+        backup: true
+      register: sab_download_path
+

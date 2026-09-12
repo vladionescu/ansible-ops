@@ -1,0 +1,73 @@
+---
+# Initial copy is online; final sync is performed with this service stopped.
+# The original directory is retained for rollback. No other service is stopped.
+- name: Migrate one media service to SSD
+  tags: [media_migrate, arr_storage, plex_cutover]
+  block:
+    - name: Check migration marker
+      stat:
+        path: "{{ media_config_root }}/.migrated-{{ media_service_name }}"
+      register: media_migration_marker
+
+    - name: Copy persistent configuration to SSD
+      when: not media_migration_marker.stat.exists
+      block:
+        - name: Create SSD configuration directory
+          file:
+            path: "{{ media_config_root }}/{{ media_service_name }}/config"
+            state: directory
+            mode: '0755'
+
+        - name: Stage live configuration
+          command:
+            argv:
+              - rsync
+              - -aH
+              - --numeric-ids
+              - "/data/docker/{{ media_service_name }}/config/"
+              - "{{ media_config_root }}/{{ media_service_name }}/config/"
+          register: media_stage
+          failed_when: media_stage.rc not in [0, 24]
+
+        - name: Stop service for consistent final copy
+          docker_container:
+            name: "{{ media_service_name }}"
+            state: stopped
+
+        - name: Final sync with service stopped
+          command:
+            argv:
+              - rsync
+              - -aH
+              - --numeric-ids
+              - --delete
+              - "/data/docker/{{ media_service_name }}/config/"
+              - "{{ media_config_root }}/{{ media_service_name }}/config/"
+
+        - name: Verify copied bytes before activating SSD configuration
+          command:
+            argv:
+              - rsync
+              - -aHnci
+              - --numeric-ids
+              - --delete
+              - "/data/docker/{{ media_service_name }}/config/"
+              - "{{ media_config_root }}/{{ media_service_name }}/config/"
+          register: media_copy_verify
+          changed_when: false
+          failed_when: media_copy_verify.rc != 0 or media_copy_verify.stdout | length > 0
+
+        - name: Record completed configuration copy
+          copy:
+            content: "Original retained at /data/docker/{{ media_service_name }}/config\n"
+            dest: "{{ media_config_root }}/.migrated-{{ media_service_name }}"
+            mode: '0600'
+
+      rescue:
+        - name: Restart original service after failed migration
+          docker_container:
+            name: "{{ media_service_name }}"
+            state: started
+        - name: Stop deployment after migration failure
+          fail:
+            msg: "SSD migration failed for {{ media_service_name }}; original container restarted."

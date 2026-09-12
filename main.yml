@@ -80,6 +80,8 @@
     - vars/vault_east.yml
   vars:
     downloaders_optimizations_enabled: true
+    media_config_root: /srv/media-config
+    media_incomplete_root: /srv/media-downloads
     timezone: "{{ vault.timezone }}"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"

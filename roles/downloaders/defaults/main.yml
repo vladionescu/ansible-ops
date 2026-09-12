@@ -3,3 +3,6 @@ downloaders:
 
 downloaders_optimizations_enabled: false
 downloaders_pull_images: true
+
+media_config_root: /data/docker
+media_incomplete_root: /data/downloads
