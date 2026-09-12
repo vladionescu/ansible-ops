@@ -116,18 +116,34 @@
     networks:
       - name: "{{ downloaders.docker_network }}"
 
-- name: Overseerr container
+- name: Seerr config permissions
+  file:
+    path: /data/docker/seerr/config
+    state: directory
+    owner: "1000"
+    group: "1000"
+    recurse: yes
+
+- name: Seerr container
   docker_container:
-    name: overseerr
-    image: sctx/overseerr
+    name: seerr
+    image: ghcr.io/seerr-team/seerr:latest
+    init: yes
+    restart_policy: unless-stopped
     pull: yes
     state: started
     volumes:
-      - /data/docker/overseerr/config:/app/config
+      - /data/docker/seerr/config:/app/config
     env:
-      PUID: "{{ radarr_user.uid }}"
-      PGID: "{{ radarr_user.group }}"
       TZ: "{{ timezone }}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 60s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     networks:
       - name: "{{ downloaders.docker_network }}"
 
