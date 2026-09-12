@@ -4,6 +4,7 @@
   group:
     name: downloads
     state: present
+  tags: [arr_storage]
 
 - name: Create sabnzb user
   user:
@@ -22,6 +23,7 @@
     shell: /usr/bin/false
     state: present
   register: sonarr_user
+  tags: [arr_storage]
 
 - name: Create radarr user
   user:
@@ -31,6 +33,7 @@
     shell: /usr/bin/false
     state: present
   register: radarr_user
+  tags: [arr_storage]
 
 - name: Create readarr user
   user:
@@ -66,13 +69,9 @@
   docker_container:
     name: sonarr
     image: linuxserver/sonarr
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
-    volumes:
-      - /data/docker/sonarr/config:/config
-      - /data/downloads:/data/downloads
-      - /data/anime-manual-import:/data/anime-manual-import
-      - /data/plex/shows:/data/plex/shows
+    volumes: "{{ ['/data/docker/sonarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else ['/data/docker/sonarr/config:/config', '/data/downloads:/data/downloads', '/data/anime-manual-import:/data/anime-manual-import', '/data/plex/shows:/data/plex/shows'] }}"
     env:
       PUID: "{{ sonarr_user.uid }}"
       PGID: "{{ sonarr_user.group }}"
@@ -81,23 +80,22 @@
       - name: "{{ downloaders.docker_network }}"
     security_opts:
       - "seccomp=unconfined"
+  tags: [arr_storage]
 
 - name: Radarr container
   docker_container:
     name: radarr
     image: linuxserver/radarr
-    pull: yes
+    pull: "{{ downloaders_pull_images }}"
     state: started
-    volumes:
-      - /data/docker/radarr/config:/config
-      - /data/downloads:/data/downloads
-      - /data/plex/movies:/data/plex/movies
+    volumes: "{{ ['/data/docker/radarr/config:/config', '/data:/data'] if downloaders_optimizations_enabled else ['/data/docker/radarr/config:/config', '/data/downloads:/data/downloads', '/data/plex/movies:/data/plex/movies'] }}"
     env:
       PUID: "{{ radarr_user.uid }}"
       PGID: "{{ radarr_user.group }}"
       TZ: "{{ timezone }}"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  tags: [arr_storage]
 
 - name: Bazarr container
   docker_container:
@@ -204,6 +202,7 @@
       UN_READARR_0_DELETE_ORIG: "true"
     networks:
       - name: "{{ downloaders.docker_network }}"
+  when: not downloaders_optimizations_enabled
 
 - name: Create Sabnzbd dirs
   file:
@@ -249,3 +248,29 @@
   loop:
     - /data/downloads/books
     - /data/books
+
+# Opt-in on klaxon only. SAB already extracts Usenet downloads.
+- name: Stop redundant Usenet unpacker
+  docker_container:
+    name: unpackerr
+    state: stopped
+    restart_policy: "no"
+  when: downloaders_optimizations_enabled
+  tags: [arr_settings]
+
+- name: Install media settings reconciler
+  copy:
+    src: reconcile_media.py
+    dest: /usr/local/sbin/reconcile-media
+    owner: root
+    group: root
+    mode: '0700'
+  when: downloaders_optimizations_enabled
+  tags: [arr_settings]
+
+- name: Reconcile internal media connections and regular TV defaults
+  command: /usr/local/sbin/reconcile-media
+  register: media_settings_result
+  changed_when: "'Changed:' in media_settings_result.stdout"
+  when: downloaders_optimizations_enabled
+  tags: [arr_settings]

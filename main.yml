@@ -9,6 +9,7 @@
     - name: Add host to correct group
       group_by:
         key: "{{ ansible_hostname }}"
+      tags: [always]
 
 - name: Set up cactus
   gather_facts: yes
@@ -78,6 +79,7 @@
   vars_files:
     - vars/vault_east.yml
   vars:
+    downloaders_optimizations_enabled: true
     timezone: "{{ vault.timezone }}"
     certbot:
       renew_command: "certbot renew --dns-cloudflare-propagation-seconds 30"

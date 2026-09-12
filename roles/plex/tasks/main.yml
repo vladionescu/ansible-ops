@@ -44,3 +44,11 @@
       - name: "{{ plex.docker_network }}"
     ports:
       - "{{ plex.port }}:32400"
+
+# Applies preferences live; no Plex restart or container recreation.
+- name: Schedule Plex marker analysis in the maintenance window
+  command: /usr/local/sbin/reconcile-media --plex-only
+  register: plex_settings_result
+  changed_when: "'Changed:' in plex_settings_result.stdout"
+  when: downloaders_optimizations_enabled | default(false)
+  tags: [arr_settings]
